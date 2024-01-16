@@ -1,0 +1,84 @@
+---
+title: "Visualisation of the interaction"
+format:
+  html:
+    code-fold: true
+editor: visual
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(plotly)
+```
+
+## Visualisation of risk of diabetes at 2 years
+
+Using the model object, we can create a 3D graphic for the risk of diabetes at 2years. 
+
+First lets setup for the figure:
+
+```{r cars}
+## baseline model
+load("baseline_model.Rdata")
+
+##Setup for figure
+gridlines = 100
+
+#prediction matrix
+cxhba1c <- seq(min(4.1), max(6.4), length.out = gridlines)
+cxglu2h <- seq(min(7.7), max(11), length.out = gridlines)
+
+xy <- cbind(expand.grid( cxhba1c=cxhba1c, cxglu2h = cxglu2h))
+
+tibble(xy, treat=0) %>%
+  mutate(
+    t_x = case_when(treat==0 ~0,
+                treat==1 & cxhba1c<5.6  ~0,
+                treat==1 & cxhba1c>=5.6~ cxhba1c-5.6)) ->predmat_t0
+
+tibble(xy, treat=1) %>%
+  mutate(
+    t_x = case_when(treat==0 ~0,
+                    treat==1 & cxhba1c<5.6  ~0,
+                    treat==1 & cxhba1c>=5.6~ cxhba1c-5.6)) ->predmat_t1
+
+## calculate predictions
+z.pred_t0 <- matrix(predict(baseline_model,
+                            type=c("response"),
+                            newdata = predmat_t0)*100,
+                 nrow = gridlines, ncol = gridlines)
+
+z.pred_t1 <- matrix(predict(baseline_model,
+                            type=c("response"),
+                            newdata = predmat_t1)*100,
+                    nrow = gridlines, ncol = gridlines)
+```
+
+And here is the figure:
+
+```{r, fig.cap = "3D image"}
+
+plot_ly(showscale=FALSE) %>%
+  add_surface(x = cxhba1c,
+              y= cxglu2h,
+              z = ~z.pred_t0,
+              name = "Placebo",
+              hovertext="Probability of diabetes",
+              colorscale = list(c(0,1),c("rgb(220,20,60)","rgb(178,34,34)"))) %>%
+  add_surface(x = cxhba1c,
+              y= cxglu2h,
+              z = ~z.pred_t1,
+              name = "Testosterone",
+              hovertext="Probability of diabetes",
+              colorscale = list(c(0,1),c("rgb(0,0,255)","rgb(0,0,128)"))) %>%
+  layout(scene = list(
+    xaxis=list(title="HbA1c (\\%)",titlefont = list(size = 10)),
+    yaxis=list(title='2-hr glucose (mmol/L)',titlefont = list(size = 10)),
+    zaxis=list(title="Probability of diabetes (\\%)",titlefont = list(size = 10))))
+
+
+```
+
+
