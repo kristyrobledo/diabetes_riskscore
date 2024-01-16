@@ -92,7 +92,7 @@ as.data.frame(
   )
 ) ->pred_df
 
-glimpse(pred_df)
+#glimpse(pred_df)
 
 ##create the interaction variable
 pred_df %>%
@@ -101,7 +101,7 @@ pred_df %>%
                 treat==1 & cxhba1c<5.6  ~0,
                 treat==1 & cxhba1c>=5.6~ cxhba1c-5.6)) ->pred_df
 
-glimpse(pred_df)
+#glimpse(pred_df)
 head(pred_df)
 tail(pred_df)
 ```
