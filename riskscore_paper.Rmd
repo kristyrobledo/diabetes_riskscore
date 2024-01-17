@@ -23,6 +23,7 @@ load("baseline_model.Rdata")
 
 # Diabetes riskscore (additional files)
 
+**For the visualisation of the interaction, please see: [https://kristyrobledo.github.io/diabetes_riskscore/](https://kristyrobledo.github.io/diabetes_riskscore/)**
 
 ## Model objects (from R)
 

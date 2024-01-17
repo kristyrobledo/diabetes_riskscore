@@ -15,11 +15,13 @@ library(plotly)
 
 ## Visualisation of risk of diabetes at 2 years
 
-Using the model object, we can create a 3D graphic for the risk of diabetes at 2years. 
+Using the model object, we can create a 3D graphic for the risk of diabetes at 2 years. 
 
-First lets setup for the figure:
+An explanation of the model objects is here  [https://github.com/kristyrobledo/diabetes_riskscore/](https://github.com/kristyrobledo/diabetes_riskscore/). 
 
-```{r cars}
+Here is the code to setup for the figure:
+
+```{r figuresetup}
 ## baseline model
 load("baseline_model.Rdata")
 
@@ -58,7 +60,7 @@ z.pred_t1 <- matrix(predict(baseline_model,
 
 And here is the figure:
 
-```{r, fig.cap = "3D image"}
+```{r, fig.cap = "Visualisation of the interaction between HbA1c and treatment on the probability of type 2 diabetes at 2 years. Red denotes placebo treatment and blue denotes treatment with testosterone. "}
 
 plot_ly(showscale=FALSE) %>%
   add_surface(x = cxhba1c,
