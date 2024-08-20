@@ -25,71 +25,42 @@ load("baseline_model.Rdata")
 
 **For the visualisation of the interaction, please see: [https://kristyrobledo.github.io/diabetes_riskscore/](https://kristyrobledo.github.io/diabetes_riskscore/)**
 
-## Model objects (from R)
+## Model explanation
 
-The R model objects for the three models are as follows:
-
-- `baseline_model.Rdata` = baseline risk factors: 2-hour OGTT glucose, HbA1c and treatment with testosterone
-- `baseline_weight_model.Rdata` = baseline risk factors plus baseline weight and changes in weight at one year
-- `baseline_waist_model.Rdata` = baseline risk factors plus baseline waist circumference and changes in waist circumference at one year
-
-## Names and units
-
-### baseline_model
+The `baselinemodel_age.Rdata` object is an R model object for the final model, including the following baseline risk factors: 2-hour OGTT glucose, HbA1c,  age and treatment with testosterone
 
 **Outcome**
 
-- `ogtt_gt11` = factor. 0= "no diabetes at 2 years", 1="diabetes at 2 years", as determined by 2-hour OGTT glucose >=11.1mmol/l 
+- `ogtt_gt11` = factor. 0= “no diabetes at 2 years”, 1=“diabetes at 2
+  years”, as determined by 2-hour OGTT glucose \>=11.1mmol/l
 
 **Covariates**
 
-- `cxhba1c` = numeric. Hba1c level at baseline in %. 
-- `cxglu2h` = numeric. 2-hour OGTT glucose at baseline in mmol/L , 
-- `t_x` = numeric. Interaction term with treatment and hba1c, see example for how to calculate. Briefly: if placebo, always 0. If Testosterone, and hba1c values is <5.6%, its 0. If Hba1c is >5.6%, its the amount that the hba1c value is >5.6%. 
-
-### baseline_weight_model
-
-Model looks like so: `outcome ~ logit + base_wt + change_wt`
-
-**Outcome**
-
-- `outcome` = factor. 0= "no diabetes at 2 years", 1="diabetes at 2 years", as determined by 2-hour OGTT glucose >=11.1mmol/l 
-
-**Covariates**
-
-- `logit` = numeric. The linear predictor from the `baseline_model`
-- `base_wt` = numeric. Weight at baseline in kilograms, 
-- `change_wt` = numeric. Change in weight at one year from baseline, in kilograms (ie. weight at one year minus weight at baseline)
-
-### baseline_waist_model
-
-Model looks like so: `outcome ~ logit + base_wc + change_wc`
-
-**Outcome**
-
-- `outcome` = factor. 0= "no diabetes at 2 years", 1="diabetes at 2 years", as determined by 2-hour OGTT glucose >=11.1mmol/l 
-
-**Covariates**
-
-- `logit` = numeric. The linear predictor from the `baseline_model`
-- `base_wc` = numeric. Waist circumference at baseline in centimetres, 
-- `change_wc` = numeric. Change in Waist circumference at one year from baseline, in centimetres (ie. waist at one year minus waist at baseline)
+- `cxhba1c` = numeric. Hba1c level at baseline in %.
+- `cxglu2h` = numeric. 2-hour OGTT glucose at baseline in mmol/L ,
+- `age` = numeric. age at baseline in years (may have decimal places)
+- `t_x` = numeric. Interaction term with treatment and hba1c, see
+  example for how to calculate. Briefly: if planned to not have testosterone treatment (ie. placebo), always 0. If planning to treat with Testosterone, and hba1c values is \<5.6%, its 0. If Hba1c is \>5.6%,
+  its the amount that the hba1c value is \>5.6%.
 
 ## Example of use
 
-To use the risk score, let create some fake patients to use this on. The hardest part is to create the interaction variable - straightforward with the code below:
+To use the risk score, let create some fake patients to use this on. The
+most complex part is to create the interaction variable, but this is straightforward
+with the code below:
 
 ```{r}
+library(tidyverse)
 
 # setup hba1c and glucose values for 10 patients
 cxhba1c <- seq(min(4.1), max(6.4), length.out = 10)
 cxglu2h <- seq(min(7.7), max(11), length.out = 10)
 
-# create a dataset with 10 placebo (treat=0) and 10 testosterone (treat=1) patients 
+# create a dataset with 10 placebo (treat=0) and 10 testosterone (treat=1) patients aged 59 years
 as.data.frame(
   rbind(
-    cbind( cxhba1c=cxhba1c, cxglu2h = cxglu2h, treat=rep(0,10)), 
-    cbind( cxhba1c=cxhba1c, cxglu2h = cxglu2h, treat=rep(1,10))
+    cbind(age=59,  cxhba1c=cxhba1c, cxglu2h = cxglu2h, treat=rep(0,10)), 
+    cbind(age=59, cxhba1c=cxhba1c, cxglu2h = cxglu2h, treat=rep(1,10))
   )
 ) ->pred_df
 
@@ -111,9 +82,9 @@ Now we have our prediction dataset, we can calculate the probability of diabetes
 
 ```{r}
 # load the baseline model, saved in the same spot as this file
-load("baseline_model.Rdata")
+load("baselinemodel_age.Rdata")
 
-prob_df<-cbind(pred_df, predict(baseline_model,
+prob_df<-cbind(pred_df, predict(baselinemodel_age,
                                 type="response",
                                 se.fit=TRUE,
                                 newdata = pred_df))
@@ -121,65 +92,5 @@ prob_df<-cbind(pred_df, predict(baseline_model,
 head(prob_df)
 tail(prob_df)
 ```
-
-To apply to the models that include changes in body composition, we follow the same process. 
-First lets create our dataset of patients:
-
-```{r}
-cxhba1c <- seq(min(4.1), max(6.4), length.out = 10)
-cxglu2h <- seq(min(7.7), max(11), length.out = 10)
-base_wt <- seq(min(65), max(170), length.out = 10)
-change_wt <- seq(min(-50), max(16), length.out = 10)
-
-# create a dataset with 10 placebo (treat=0) and 10 testosterone (treat=1) patients 
-as.data.frame(
-  rbind(
-    cbind( cxhba1c=cxhba1c, cxglu2h = cxglu2h, 
-           base_wt=base_wt,change_wt=change_wt, treat=rep(0,10)), 
-    cbind( cxhba1c=cxhba1c, cxglu2h = cxglu2h,
-           base_wt=base_wt,change_wt=change_wt, treat=rep(1,10))
-  )
-) ->predch_df
-
-glimpse(predch_df)
-
-##create the interaction variable
-predch_df %>%
-  mutate(
-    t_x = case_when(treat==0 ~0,
-                treat==1 & cxhba1c<5.6  ~0,
-                treat==1 & cxhba1c>=5.6~ cxhba1c-5.6)) ->predch_df
-
-glimpse(predch_df)
-head(predch_df)
-tail(predch_df)
-```
-
-Now we have our prediction dataset, we can calculate the linear predictor for the baseline model, using the same process as before. This gives `fit` which is our logit:
-
-```{r}
-
-predch_df_logit<-cbind(predch_df, 
-                       logit = predict(baseline_model,
-                                       newdata = predch_df))
-
-```
-
-Now we can perform the prediction for the baseline model with weight included:
-
-```{r}
-load("baseline_weight_model.Rdata")
-
-probch_df<-cbind(predch_df_logit, 
-                 predict(baseline_weight_model,
-                                    type="response",
-                                    se.fit=TRUE,
-                                    newdata = predch_df_logit))
-head(probch_df)
-tail(probch_df)
-```
-
-
-
 
 
